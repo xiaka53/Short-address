@@ -14,6 +14,7 @@ import (
 type App struct {
 	Router      *mux.Router
 	Middlewares *Middleware
+	Config      *Env
 }
 
 //接受参数
@@ -23,12 +24,13 @@ type shortenReq struct {
 }
 
 //返回参数
-type shortLintResp struct {
+type shortLinkResp struct {
 	ShortLink string `json:"short_link"`
 }
 
 //初始化服务
-func (app *App) Initialize() {
+func (app *App) Initialize(env *Env) {
+	app.Config = env
 	app.Router = mux.NewRouter()
 	app.Middlewares = &Middleware{}
 	app.initializeRouter()
@@ -56,22 +58,36 @@ func (app *App) createShortlink(w http.ResponseWriter, r *http.Request) {
 		responseWithError(w, NewBadReqErr(fmt.Errorf("validate parameters failed : %+v", req)), nil)
 		return
 	}
-	//if err := validator.Validate{}
-	fmt.Println(req)
+	link, err := app.Config.S.Shorten(req.URL, req.ExpirationInMinuxtes)
+	if err != nil {
+		responseWithError(w, err, nil)
+	} else {
+		responseWithJson(w, http.StatusCreated, shortLinkResp{ShortLink: link})
+	}
 }
 
 //端地址解析
 func (app *App) getShortlinkInfo(w http.ResponseWriter, r *http.Request) {
 	vals := r.URL.Query()
 	s := vals.Get("shortlink")
-
-	fmt.Println("getShortlinkInfo:", s)
+	info, err := app.Config.S.ShortLinkInfo(s)
+	if err != nil {
+		responseWithError(w, err, nil)
+	} else {
+		responseWithJson(w, http.StatusCreated, info)
+	}
 }
 
 //重定向
 func (app *App) rediect(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fmt.Println("rediect:", vars["shortlink"])
+	url, err := app.Config.S.UnShorten(vars["shortlink"])
+	if err != nil {
+		responseWithError(w, err, nil)
+	} else {
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	}
 }
 
 //启动服务
