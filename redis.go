@@ -48,17 +48,11 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 	}
 	shortLink := base62.EncodeInt64(id)
 	exp *= 60
-	if _, err := rd.Do("set", fmt.Sprintf(ShortLinkKey, shortLink), url); err != nil {
-		return "", err
-	}
-	if _, err := rd.Do("expire", fmt.Sprintf(ShortLinkKey, shortLink), exp); err != nil {
+	if _, err := rd.Do("setex", fmt.Sprintf(ShortLinkKey, shortLink), exp, url); err != nil {
 		return "", err
 	}
 
-	if _, err := rd.Do("set", fmt.Sprintf(UrlHashKey, urlHash), shortLink); err != nil {
-		return "", nil
-	}
-	if _, err := rd.Do("expire", fmt.Sprintf(UrlHashKey, urlHash), exp); err != nil {
+	if _, err := rd.Do("setex", fmt.Sprintf(UrlHashKey, urlHash), exp, shortLink); err != nil {
 		return "", nil
 	}
 	detail, err := json.Marshal(&UrlDetail{
@@ -69,10 +63,7 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, err := rd.Do("set", fmt.Sprintf(ShortLinkDetailKey, shortLink), detail); err != nil {
-		return "", err
-	}
-	if _, err := rd.Do("expire", fmt.Sprintf(ShortLinkDetailKey, shortLink), exp); err != nil {
+	if _, err := rd.Do("setex", fmt.Sprintf(ShortLinkDetailKey, shortLink), exp, detail); err != nil {
 		return "", err
 	}
 	return shortLink, nil
