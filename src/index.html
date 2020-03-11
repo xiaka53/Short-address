@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./min.css">
+    <title>在线短网址生成</title>
+</head>
+<body style="width: 1670px;background:#0d848a47">
+    <div style="height: 800px;width: 80%;margin: 0 auto; background-image: url('./bg.png')">
+    	<div style="margin: 10px;height: 120px; width: 100%">
+
+        	
+        	<div style="margin: 0 auto;margin-top: 10px;float: left;">
+        		<img src="./Angus.jpg" style="width: 96px;height: 96px;float: left;border-radius: 9px;">
+        	</div>
+        	<div style="margin: 0 auto 10px;width: 353px;height: 96px;margin-top: 10px">
+        		<img src="./short-address.jpg" style="width: 353px;height: 96px;float: left; margin: 0 auto;border-radius: 9px;">
+        	</div>
+        </div>
+
+        <div style="height: 600px;margin:10px;">
+        	<form id="Add" name="Add" style="height: 400px;margin:0 auto; width: 65% ;padding: 40px">
+        		<select name="expiration_in_minuxtes" style="outline-style: none;border: 1px solid #ccc;border-radius:3px;width: 20%;padding: 2px 0px;font-size: 24px;font-family: 'Microsoft soft';">
+        			<option value=1>1天</option>
+        			<option value=2>1周</option>
+        			<option value=3>永久</option>
+        		</select>
+        		<input type="test" name="url" style="outline-style: none;border-radius:3px;width: 78%;padding: 2px 0px;font-size: 24px;font-family: 'Microsoft soft';border-radius: 10px" placeholder="URL:">
+        		<button type="button" onclick="AddShortAddress()"  style="font-family: 'Microsoft soft';width: 100%;height: 50px;margin-top: 20px;font-size: 24px;background-image: url('./button.png');color: #eee;border-radius: 16px">生成</button>
+
+		    	<div style="width: 100%;height: 260px;border: 2px solid black;margin-top: 25px;background: #485a29">
+		    		<p style="margin:26px">ada</p>
+		    	</div>
+        	</form>
+        </div>
+
+        <div style="height: 30px;margin:10px 10px 10px 10px ;text-align: center;line-height: 30px">
+        	<b style="font-size: 14px;color: #eee">©2020-2020 <a href="a1b2.fun" style="text-decoration: none;color: #0eff00">a1b2.fun</a> 版权所有</b>
+        </div>
+    </div>
+    <script src="./jquery-3.4.1.js"></script>
+    <script src="./jquery-3.4.1.min.js"></script>
+    <script type="text/javascript">
+    	function AddShortAddress() {
+    		var data={"url":"http://www.baidu.com","expiration_in_minuxtes":1};
+
+			$.ajax({
+                    type: "POST",
+					url: "http://baidu.com",
+//                     contentType: "application/json",
+                    dataType: "json",
+					async:false,
+                    data: data,
+                    success: function (jsonResult) {
+                        alert("=="+JSON.stringify(jsonResult));
+                    }
+               });
+    	}
+    </script>
+</body>
+</html>

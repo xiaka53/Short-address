@@ -1,18 +1,26 @@
 package main
 
-import "os"
+import (
+	"github.com/xiaka53/DeployAndLog/lib"
+	"github.com/xiaka53/Short-address/public"
+	"github.com/xiaka53/Short-address/router"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+)
 
 func main() {
-	setEnv()
-	a := App{}
-	a.Initialize(getEnv())
-	a.Run(":8000")
-}
+	if err := lib.InitModule("./conf/dev/", []string{"base", "redis"}); err != nil {
+		log.Fatal(err)
+	}
+	defer lib.Destroy()
+	public.InitValidate()
+	router.HttpServerRun()
 
-func setEnv() {
-	_ = os.Setenv("RedisAddr", "127.0.0.1:6379")
-	_ = os.Setenv("RedisPwd", "")
-	_ = os.Setenv("RedisDb", "1")
-	_ = os.Setenv("MaxActive", "2000")
-	_ = os.Setenv("MaxIdle", "2000")
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	router.HttpServerStop()
 }

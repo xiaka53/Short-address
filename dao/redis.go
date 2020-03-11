@@ -1,4 +1,4 @@
-package main
+package dao
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/mattheath/base62"
 	"github.com/speps/go-hashids"
+	"github.com/xiaka53/DeployAndLog/lib"
 	"time"
 )
 
@@ -17,19 +18,18 @@ const (
 )
 
 type RedisCli struct {
-	Cli *redis.Pool
+	Cli redis.Conn
 	Db  int //数据库
 }
 
 //url生成短域名
 func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 	urlHash := toHash(url)
-	rd := r.Cli.Get()
-	defer rd.Close()
-	if _, err := rd.Do("select", r.Db); err != nil {
+	defer r.Cli.Close()
+	if _, err := r.Cli.Do("select", r.Db); err != nil {
 		return "", err
 	}
-	d, err := redis.String(rd.Do("get", fmt.Sprintf(UrlHashKey, urlHash)))
+	d, err := redis.String(r.Cli.Do("get", fmt.Sprintf(UrlHashKey, urlHash)))
 	if err != nil && err != redis.ErrNil {
 		return "", err
 	} else {
@@ -39,20 +39,20 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 			return d, nil
 		}
 	}
-	if _, err := rd.Do("incr", UrlIdKey); err != nil {
+	if _, err := r.Cli.Do("incr", UrlIdKey); err != nil {
 		return "", err
 	}
-	id, err := redis.Int64(rd.Do("get", UrlIdKey))
+	id, err := redis.Int64(r.Cli.Do("get", UrlIdKey))
 	if err != nil {
 		return "", err
 	}
 	shortLink := base62.EncodeInt64(id)
 	exp *= 60
-	if _, err := rd.Do("setex", fmt.Sprintf(ShortLinkKey, shortLink), exp, url); err != nil {
+	if _, err := r.Cli.Do("setex", fmt.Sprintf(ShortLinkKey, shortLink), exp, url); err != nil {
 		return "", err
 	}
 
-	if _, err := rd.Do("setex", fmt.Sprintf(UrlHashKey, urlHash), exp, shortLink); err != nil {
+	if _, err := r.Cli.Do("setex", fmt.Sprintf(UrlHashKey, urlHash), exp, shortLink); err != nil {
 		return "", nil
 	}
 	detail, err := json.Marshal(&UrlDetail{
@@ -63,7 +63,7 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, err := rd.Do("setex", fmt.Sprintf(ShortLinkDetailKey, shortLink), exp, detail); err != nil {
+	if _, err := r.Cli.Do("setex", fmt.Sprintf(ShortLinkDetailKey, shortLink), exp, detail); err != nil {
 		return "", err
 	}
 	return shortLink, nil
@@ -88,12 +88,11 @@ type UrlDetail struct {
 
 //短链接获取域名信息
 func (r *RedisCli) ShortLinkInfo(shortLink string) (interface{}, error) {
-	rd := r.Cli.Get()
-	defer rd.Close()
-	if _, err := rd.Do("select", r.Db); err != nil {
+	defer r.Cli.Close()
+	if _, err := r.Cli.Do("select", r.Db); err != nil {
 		return "", err
 	}
-	detail, err := rd.Do("get", fmt.Sprintf(ShortLinkDetailKey, shortLink))
+	detail, err := r.Cli.Do("get", fmt.Sprintf(ShortLinkDetailKey, shortLink))
 	if err != nil {
 		return "", err
 	} else {
@@ -103,12 +102,11 @@ func (r *RedisCli) ShortLinkInfo(shortLink string) (interface{}, error) {
 
 //短链接获取原始链接
 func (r *RedisCli) UnShorten(shortLink string) (string, error) {
-	rd := r.Cli.Get()
-	defer rd.Close()
-	if _, err := rd.Do("select", r.Db); err != nil {
+	defer r.Cli.Close()
+	if _, err := r.Cli.Do("select", r.Db); err != nil {
 		return "", err
 	}
-	url, err := redis.String(rd.Do("get", fmt.Sprintf(ShortLinkKey, shortLink)))
+	url, err := redis.String(r.Cli.Do("get", fmt.Sprintf(ShortLinkKey, shortLink)))
 	if err != nil {
 		return "", err
 	} else {
@@ -118,18 +116,7 @@ func (r *RedisCli) UnShorten(shortLink string) (string, error) {
 
 //实力化redis
 func NewRedisCli(addr string, pwd string, maxIdle, MaxActive, db int) *RedisCli {
-	client := &redis.Pool{
-		MaxIdle:     maxIdle,
-		MaxActive:   MaxActive,
-		IdleTimeout: 240 * time.Second,
-		Wait:        true,
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", addr, redis.DialPassword(pwd))
-			if err != nil {
-				return nil, err
-			}
-			return c, nil
-		},
-	}
-	return &RedisCli{Cli: client, Db: db}
+	cli, _ := lib.RedisConnFactory("local")
+	lib.RedisConfDo()
+	return &RedisCli{Cli: cli, Db: db}
 }
