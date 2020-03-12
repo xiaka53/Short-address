@@ -6,15 +6,16 @@ import (
 	"github.com/xiaka53/Short-address/dto"
 	"github.com/xiaka53/Short-address/intef"
 	"github.com/xiaka53/Short-address/middleware"
+	"github.com/xiaka53/Short-address/public"
+	"net/http"
 )
 
 type App struct {
 	Storage intef.RedisStorage
 }
 
-func ApiRegister(router *gin.RouterGroup) {
-	app := App{}
-	router.POST("/crater", app.createShortlink)
+func ApiRegister(app *App, router *gin.RouterGroup) {
+	router.POST("/shorter", app.createShortlink)
 	router.GET("/info", app.getShortlinkInfo)
 }
 
@@ -25,7 +26,7 @@ func (app *App) createShortlink(c *gin.Context) {
 		middleware.ResponseError(c, middleware.ParameterError, err)
 		return
 	}
-	newUrl, err := app.Storage.Shorten(param.URL, param.ExpirationInMinuxtes)
+	newUrl, err := app.Storage.Shorten(public.GetGinTraceContext(c), param.URL, param.ExpirationInMinuxtes)
 	if err != nil {
 		middleware.ResponseError(c, 504, err)
 		return
@@ -40,7 +41,7 @@ func (app *App) getShortlinkInfo(c *gin.Context) {
 		middleware.ResponseError(c, middleware.ParameterError, errors.New("url error!"))
 		return
 	}
-	urlInfo, err := app.Storage.ShortLinkInfo(vals)
+	urlInfo, err := app.Storage.ShortLinkInfo(public.GetGinTraceContext(c), vals)
 	if err != nil {
 		middleware.ResponseError(c, 504, err)
 		return
@@ -49,11 +50,12 @@ func (app *App) getShortlinkInfo(c *gin.Context) {
 }
 
 //重定向
-func (app *App) rediect(c *gin.Context) {
-	newUrl, err := app.Storage.UnShorten()
+func (app *App) Rediect(c *gin.Context) {
+	shortLink := c.Param("shortLink")
+	newUrl, err := app.Storage.UnShorten(public.GetGinTraceContext(c), shortLink)
 	if err != nil {
 		middleware.ResponseError(c, 504, err)
 		return
 	}
-	middleware.ResponseSuccess(c, "")
+	c.Redirect(http.StatusMovedPermanently, newUrl)
 }

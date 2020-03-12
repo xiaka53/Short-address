@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"demo/gin-frame/public"
 	"github.com/gin-gonic/gin"
+	"github.com/xiaka53/Short-address/public"
 	"gopkg.in/go-playground/validator.v9/translations/en"
 	"gopkg.in/go-playground/validator.v9/translations/ja"
 	"gopkg.in/go-playground/validator.v9/translations/zh"

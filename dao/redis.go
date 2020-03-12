@@ -18,18 +18,22 @@ const (
 )
 
 type RedisCli struct {
-	Cli redis.Conn
-	Db  int //数据库
+	PoolName string
+	Db       int //数据库
 }
 
 //url生成短域名
-func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
+func (r *RedisCli) Shorten(trace *lib.TraceContext, url string, exp int64) (string, error) {
 	urlHash := toHash(url)
-	defer r.Cli.Close()
-	if _, err := r.Cli.Do("select", r.Db); err != nil {
+	rs, err := lib.RedisConnFactory(r.PoolName)
+	if err != nil {
 		return "", err
 	}
-	d, err := redis.String(r.Cli.Do("get", fmt.Sprintf(UrlHashKey, urlHash)))
+	defer lib.RedisConnClose(trace, rs)
+	if _, err := lib.RedisLogDo(trace, rs, "select", r.Db); err != nil {
+		return "", err
+	}
+	d, err := redis.String(lib.RedisLogDo(trace, rs, "get", fmt.Sprintf(UrlHashKey, urlHash)))
 	if err != nil && err != redis.ErrNil {
 		return "", err
 	} else {
@@ -39,20 +43,20 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 			return d, nil
 		}
 	}
-	if _, err := r.Cli.Do("incr", UrlIdKey); err != nil {
+	if _, err := lib.RedisLogDo(trace, rs, "incr", UrlIdKey); err != nil {
 		return "", err
 	}
-	id, err := redis.Int64(r.Cli.Do("get", UrlIdKey))
+	id, err := redis.Int64(lib.RedisLogDo(trace, rs, "get", UrlIdKey))
 	if err != nil {
 		return "", err
 	}
 	shortLink := base62.EncodeInt64(id)
 	exp *= 60
-	if _, err := r.Cli.Do("setex", fmt.Sprintf(ShortLinkKey, shortLink), exp, url); err != nil {
+	if _, err := lib.RedisLogDo(trace, rs, "setex", fmt.Sprintf(ShortLinkKey, shortLink), exp, url); err != nil {
 		return "", err
 	}
 
-	if _, err := r.Cli.Do("setex", fmt.Sprintf(UrlHashKey, urlHash), exp, shortLink); err != nil {
+	if _, err := lib.RedisLogDo(trace, rs, "setex", fmt.Sprintf(UrlHashKey, urlHash), exp, shortLink); err != nil {
 		return "", nil
 	}
 	detail, err := json.Marshal(&UrlDetail{
@@ -63,7 +67,7 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, err := r.Cli.Do("setex", fmt.Sprintf(ShortLinkDetailKey, shortLink), exp, detail); err != nil {
+	if _, err := lib.RedisLogDo(trace, rs, "setex", fmt.Sprintf(ShortLinkDetailKey, shortLink), exp, detail); err != nil {
 		return "", err
 	}
 	return shortLink, nil
@@ -87,12 +91,16 @@ type UrlDetail struct {
 }
 
 //短链接获取域名信息
-func (r *RedisCli) ShortLinkInfo(shortLink string) (interface{}, error) {
-	defer r.Cli.Close()
-	if _, err := r.Cli.Do("select", r.Db); err != nil {
+func (r *RedisCli) ShortLinkInfo(trace *lib.TraceContext, shortLink string) (interface{}, error) {
+	rs, err := lib.RedisConnFactory(r.PoolName)
+	if err != nil {
 		return "", err
 	}
-	detail, err := r.Cli.Do("get", fmt.Sprintf(ShortLinkDetailKey, shortLink))
+	defer lib.RedisConnClose(trace, rs)
+	if _, err := lib.RedisLogDo(trace, rs, "select", r.Db); err != nil {
+		return "", err
+	}
+	detail, err := lib.RedisLogDo(trace, rs, "get", fmt.Sprintf(ShortLinkDetailKey, shortLink))
 	if err != nil {
 		return "", err
 	} else {
@@ -101,12 +109,16 @@ func (r *RedisCli) ShortLinkInfo(shortLink string) (interface{}, error) {
 }
 
 //短链接获取原始链接
-func (r *RedisCli) UnShorten(shortLink string) (string, error) {
-	defer r.Cli.Close()
-	if _, err := r.Cli.Do("select", r.Db); err != nil {
+func (r *RedisCli) UnShorten(trace *lib.TraceContext, shortLink string) (string, error) {
+	rs, err := lib.RedisConnFactory(r.PoolName)
+	if err != nil {
 		return "", err
 	}
-	url, err := redis.String(r.Cli.Do("get", fmt.Sprintf(ShortLinkKey, shortLink)))
+	defer lib.RedisConnClose(trace, rs)
+	if _, err := lib.RedisLogDo(trace, rs, "select", r.Db); err != nil {
+		return "", err
+	}
+	url, err := redis.String(lib.RedisLogDo(trace, rs, "get", fmt.Sprintf(ShortLinkKey, shortLink)))
 	if err != nil {
 		return "", err
 	} else {
@@ -114,9 +126,10 @@ func (r *RedisCli) UnShorten(shortLink string) (string, error) {
 	}
 }
 
-//实力化redis
-func NewRedisCli(addr string, pwd string, maxIdle, MaxActive, db int) *RedisCli {
-	cli, _ := lib.RedisConnFactory("local")
-	lib.RedisConfDo()
-	return &RedisCli{Cli: cli, Db: db}
+//初始化redis配置
+func InitRedis() *RedisCli {
+	return &RedisCli{
+		Db:       0,
+		PoolName: "default",
+	}
 }

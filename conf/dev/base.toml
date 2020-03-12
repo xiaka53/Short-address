@@ -1,0 +1,26 @@
+# This is base config
+
+[base]
+    debug_model="debug"
+    time_location="Asia/Shanghai"
+
+[http]
+    addr =":8765"                       # 监听地址, default ":8700"
+    read_timeout = 10                   # 读取超时时长
+    write_timeout = 10                  # 写入超时时长
+    max_header_bytes = 20               # 最大的header大小，二进制位长度
+    allow_ip = [                        # 白名单ip列表
+        "127.0.0.1",
+    ]
+
+[log]
+    log_level="trace" #日志级别：低
+     [log.file_writer]           #文件写入配置
+             on = true
+             log_path = "./golang_common.inf.log"
+             rotate_log_path = "./golang_common.inf.log"
+             wf_log_path = "./golang_common.wf.log"
+             rotate_wf_log_path = "./golang_common.wf.log"
+         [log.console_writer]        #工作台输出
+             on = true
+             color = true
