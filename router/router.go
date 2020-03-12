@@ -12,6 +12,8 @@ func InitRouter(middlewares ...gin.HandlerFunc) (router *gin.Engine) {
 	router = gin.Default()
 	router.Use(middlewares...)
 
+	router.StaticFile("/index", "./src/index.html")
+	router.Static("/src", "./src")
 	app := &controller.App{
 		Storage: dao.InitRedis(),
 	}

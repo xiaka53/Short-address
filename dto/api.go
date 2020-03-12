@@ -10,8 +10,8 @@ import (
 )
 
 type ShortenReq struct {
-	URL                  string `json:"url" validate:"required"`
-	ExpirationInMinuxtes int64  `json:"expiration_in_minuxtes" validate:"min=0"`
+	URL                  string `json:"url" validate:"required,url"`
+	ExpirationInMinuxtes int64  `json:"expiration_in_minuxtes" validate:"required,oneof=1 7 0"`
 }
 
 func (o *ShortenReq) BindingValidParams(c *gin.Context) (err error) {

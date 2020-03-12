@@ -51,7 +51,7 @@ func (r *RedisCli) Shorten(trace *lib.TraceContext, url string, exp int64) (stri
 		return "", err
 	}
 	shortLink := base62.EncodeInt64(id)
-	exp *= 60
+	exp *= 60 * 60 * 24
 	if _, err := lib.RedisLogDo(trace, rs, "setex", fmt.Sprintf(ShortLinkKey, shortLink), exp, url); err != nil {
 		return "", err
 	}

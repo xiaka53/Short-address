@@ -26,12 +26,16 @@ func (app *App) createShortlink(c *gin.Context) {
 		middleware.ResponseError(c, middleware.ParameterError, err)
 		return
 	}
+	if param.ExpirationInMinuxtes == 0 {
+		middleware.ResponseError(c, middleware.ParameterError, errors.New("暂未开放"))
+		return
+	}
 	newUrl, err := app.Storage.Shorten(public.GetGinTraceContext(c), param.URL, param.ExpirationInMinuxtes)
 	if err != nil {
 		middleware.ResponseError(c, 504, err)
 		return
 	}
-	middleware.ResponseSuccess(c, newUrl)
+	middleware.ResponseSuccess(c, "http://ceshi.cocofan.cn/0/"+newUrl)
 }
 
 //端地址解析
