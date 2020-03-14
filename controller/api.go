@@ -35,7 +35,7 @@ func (app *App) createShortlink(c *gin.Context) {
 		middleware.ResponseError(c, 504, err)
 		return
 	}
-	middleware.ResponseSuccess(c, "http://ceshi.cocofan.cn/0/"+newUrl)
+	middleware.ResponseSuccess(c, "http://d.cocofan.cn/"+newUrl)
 }
 
 //端地址解析
