@@ -14,9 +14,6 @@ func main() {
 	if err := lib.InitModule("./conf/dev/", []string{"base", "redis"}); err != nil {
 		log.Fatal(err)
 	}
-	type at struct {
-		Ac map[string]string
-	}
 	defer lib.Destroy()
 	public.InitValidate()
 	router.HttpServerRun()

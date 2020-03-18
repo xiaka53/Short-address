@@ -1,0 +1,1 @@
+[ERROR][2020-03-12T15:00:50.307][log.go:74] _com_redis_failure||traceid=c0a801085e69de2219b04d9f658221b0||cspanid=||spanid=9ec1df2a78629a0f||method=select||err=dial tcp 127.0.0.1:6379: connect: connection refused||bind=[0]||proc_time=0.000002s
